@@ -13,9 +13,11 @@ Accept-Encoding (TODO)
 
 """
 import logging
+
 log = logging.getLogger(__name__)
 
 __version__ = "1.0.0"
+
 
 # Objects used to represent aspects of Content Negotiation
 ###########################################################
@@ -47,13 +49,14 @@ class AcceptParameters(object):
     
     ap = AcceptParameters(ContentType("text/html"), Language("en"))
     """
+
     def __init__(self, content_type=None, language=None, encoding=None, charset=None, packaging=None):
         self.content_type = content_type
         self.language = language
         self.encoding = encoding
         self.charset = charset
         self.packaging = packaging
-        
+
     def matches(self, other, ignore_language_variants=False, as_client=True, packaging_wildcard=False):
         """
         Do this set of AcceptParameters match the other set of AcceptParameters.
@@ -75,10 +78,11 @@ class AcceptParameters(object):
             p_match = self.packaging is None or other.packaging is None or self.packaging == other.packaging
         else:
             p_match = self.packaging == other.packaging
-        l_match = self.language.matches(other.language, ignore_language_variants, as_client) if self.language is not None else True
-        
+        l_match = self.language.matches(other.language, ignore_language_variants,
+                                        as_client) if self.language is not None else True
+
         return ct_match and l_match and e_match and c_match and p_match
-    
+
     def media_format(self):
         """
         This provides a convenient method to canonically represent the accept
@@ -97,10 +101,10 @@ class AcceptParameters(object):
             params += "(packaging=\"" + str(self.packaging) + "\") "
         mf = "(& " + params + ")"
         return mf
-    
+
     def __eq__(self, other):
         return self.media_format() == other.media_format()
-    
+
     def __str__(self):
         s = "AcceptParameters:: "
         if self.content_type is not None:
@@ -114,9 +118,10 @@ class AcceptParameters(object):
         if self.packaging is not None:
             s += "Packaging: " + str(self.packaging) + ";"
         return s
-    
+
     def __repr__(self):
         return str(self)
+
 
 class Language(object):
     """
@@ -127,7 +132,8 @@ class Language(object):
         en  - English
         en-gb   - British English
     """
-    def __init__(self, range=None, language=None, variant=None):        
+
+    def __init__(self, range=None, language=None, variant=None):
         """
         This object can be initiased in 2 ways:
             1/ With a Language range, containing the language and optionally the variant parts:
@@ -142,7 +148,7 @@ class Language(object):
         else:
             self.language = language
             self.variant = variant
-        
+
     def matches(self, other, ignore_language_variants=False, as_client=True):
         """
         Does this language match the other language.  This is not strictly
@@ -157,21 +163,21 @@ class Language(object):
         """
         if other is None:
             return False
-        
+
         if self.language == "*" or other.language == "*":
             return True
-        
+
         l_match = self.language == other.language
         v_match = self.variant == other.variant
-        
+
         if as_client and self.variant is None and other.variant is not None:
             v_match = True
         elif as_client and self.variant is not None and other.variant is None:
             if ignore_language_variants:
                 v_match = True
-        
+
         return l_match and v_match
-    
+
     def _from_range(self, range):
         """
         parse the lang and variant from the supplied range
@@ -183,23 +189,25 @@ class Language(object):
             lang = lang_parts[0]
             sublang = lang_parts[1]
             return lang, sublang
-    
+
     def __eq__(self, other):
         return str(self) == str(other)
-    
+
     def __str__(self):
         s = str(self.language)
         if self.variant is not None:
             s += "-" + str(self.variant)
         return s
-            
+
     def __repr__(self):
         return str(self)
+
 
 class ContentType(object):
     """
     Class to represent a content type (mimetype) requested through content negotiation
     """
+
     def __init__(self, mimetype=None, type=None, subtype=None, params=None):
         """
         There are 2 ways to instantiate this object.
@@ -222,7 +230,7 @@ class ContentType(object):
         self.type = None
         self.subtype = None
         self.params = None
-        
+
         if mimetype is not None:
             self.from_mimetype(mimetype)
         else:
@@ -266,7 +274,7 @@ class ContentType(object):
         # assume None to be a wildcard
         if other is None:
             return False
-        
+
         tmatch = self.type == "*" or other.type == "*" or self.type == other.type
         smatch = self.subtype == "*" or other.subtype == "*" or self.subtype == other.subtype
         # FIXME: there is some ambiguity in mime as to whether the omission of the params part is the same as
@@ -368,6 +376,7 @@ class ContentNegotiator(object):
     >>> acceptable
     AcceptParameters:: Content Type: text/html;Language: de;
     """
+
     def __init__(self, default_accept_parameters=None, acceptable=[], weights=None, ignore_language_variants=False):
         """
         There are 4 parameters which must be set in order to start content negotiation
@@ -381,21 +390,23 @@ class ContentNegotiator(object):
         """
         self.acceptable = acceptable
         self.default_accept_parameters = default_accept_parameters
-        self.weights = weights if weights is not None else {'content_type' : 1.0, 'language' : 1.0, 'charset' : 1.0, 'encoding' : 1.0, 'packaging' : 1.0}
+        self.weights = weights if weights is not None else {'content_type': 1.0, 'language': 1.0, 'charset': 1.0,
+                                                            'encoding': 1.0, 'packaging': 1.0}
         self.ignore_language_variants = ignore_language_variants
-        
-        if not self.weights.has_key("content_type"):
+
+        if "content_type" not in self.weights:
             self.weights["content_type"] = 1.0
-        if not self.weights.has_key("language"):
+        if "language" not in self.weights:
             self.weights["language"] = 1.0
-        if not self.weights.has_key("charset"):
+        if "charset" not in self.weights:
             self.weights["charset"] = 1.0
-        if not self.weights.has_key("encoding"):
+        if "encoding" not in self.weights:
             self.weights["encoding"] = 1.0
-        if not self.weights.has_key("packaging"):
+        if "packaging" not in self.weights:
             self.weights["packaging"] = 1.0
 
-    def negotiate(self, accept=None, accept_language=None, accept_encoding=None, accept_charset=None, accept_packaging=None):
+    def negotiate(self, accept=None, accept_language=None, accept_encoding=None, accept_charset=None,
+                  accept_packaging=None):
         """
         Main method for carrying out content negotiation over the supplied HTTP headers.
         Returns either the preferred AcceptParameters as per the settings of the object, or 
@@ -411,7 +422,7 @@ class ContentNegotiator(object):
         
         If verbose=True, then this will printto stdout
         """
-        
+
         if accept is None and accept_language is None and accept_encoding is None and accept_charset is None and accept_packaging is None:
             # if it is not available just return the defaults
             return self.default_accept_parameters
@@ -427,49 +438,51 @@ class ContentNegotiator(object):
         encoding_analysed = self._analyse_encoding(accept_encoding)
         charset_analysed = self._analyse_charset(accept_charset)
         packaging_analysed = self._analyse_packaging(accept_packaging)
-        
+
         log.info("Accept Analysed: " + str(accept_analysed))
         log.info("Language Analysed: " + str(lang_analysed))
         log.info("Packaging Analysed: " + str(packaging_analysed))
-        
+
         # now combine these results into one list of preferred accepts
-        preferences = self._list_acceptable(self.weights, accept_analysed, lang_analysed, encoding_analysed, charset_analysed, packaging_analysed)
-        
+        preferences = self._list_acceptable(self.weights, accept_analysed, lang_analysed, encoding_analysed,
+                                            charset_analysed, packaging_analysed)
+
         log.info("Preference List: " + str(preferences))
-        
+
         # go through the analysed formats and cross reference them with the acceptable formats
         accept_parameters = self._get_acceptable(preferences, self.acceptable)
-        
+
         log.info("Acceptable: " + str(accept_parameters))
 
         # return the acceptable type.  If this is None (which get_acceptable can return), then the caller
         # will know that we failed to negotiate a type and should 415 the client
         return accept_parameters
 
-    def _list_acceptable(self, weights, content_types=None, languages=None, encodings=None, charsets=None, packaging=None):
-        
+    def _list_acceptable(self, weights, content_types=None, languages=None, encodings=None, charsets=None,
+                         packaging=None):
+
         log.debug("Relative weights: " + str(weights))
-        
+
         if content_types is None:
-            content_types = {0.0 : [None]}
+            content_types = {0.0: [None]}
         if languages is None:
-            languages = {0.0 : [None]}
+            languages = {0.0: [None]}
         if encodings is None:
-            encodings = {0.0 : [None]}
+            encodings = {0.0: [None]}
         if charsets is None:
-            charsets = {0.0 : [None]}
+            charsets = {0.0: [None]}
         if packaging is None:
-            packaging = {0.0 : [None]}
-        
+            packaging = {0.0: [None]}
+
         log.debug("Matrix of options:")
         log.debug("Content Types: " + str(content_types))
         log.debug("Languages: " + str(languages))
         log.debug("Encodings: " + str(encodings))
         log.debug("Charsets: " + str(charsets))
         log.debug("Packaging: " + str(packaging))
-        
+
         unsorted = []
-        
+
         # create an accept_parameter for each first precedence field
         # FIXME: this is hideous, but recursive programming is making my head
         # hurt so screw it.
@@ -483,26 +496,26 @@ class ContentNegotiator(object):
                                     for v4 in vals4:
                                         for q5, vals5 in packaging.items():
                                             wq = ((weights['content_type'] * q1) + (weights['language'] * q2) +
-                                                    (weights['encoding'] * q3) + (weights['charset'] * q4) + 
-                                                    (weights['packaging'] * q5))
+                                                  (weights['encoding'] * q3) + (weights['charset'] * q4) +
+                                                  (weights['packaging'] * q5))
                                             for v5 in vals5:
                                                 ap = AcceptParameters(v1, v2, v3, v4, v5)
                                                 unsorted.append((ap, wq))
-        
+
         sorted = self._sort_by_q(unsorted, 0.0)
         return sorted
 
     def _analyse_packaging(self, accept):
         if accept is None:
             return None
-            
+
         # if the header is not none, then it should be a straightforward uri,
         # with no q value, so our return is simple:
-        return {1.0 : [accept]}
+        return {1.0: [accept]}
 
     def _analyse_encoding(self, accept):
         return None
-        
+
     def _analyse_charset(self, accept):
         return None
 
@@ -540,7 +553,7 @@ class ContentNegotiator(object):
         """
         if accept is None:
             return None
-            
+
         # the accept header is a list of content types and q values, in a comma separated list
         parts = self._split_accept_header(accept)
 
@@ -555,7 +568,7 @@ class ContentNegotiator(object):
         for part in parts:
             # count the part number that we are working on, starting from 1
             counter += 1
-            
+
             type, params, q = self._interpret_accept_field(part, -1 * counter)
             supertype, subtype = type.split("/", 1)
             if q > highest_q:
@@ -589,9 +602,10 @@ class ContentNegotiator(object):
                 # otherwise, we have to calculate the q value using the following equation which creates a q value "qv"
                 # within "q_range" of 1.0 [the first part of the eqn] based on the fraction of the way through the total
                 # accept header list scaled by the q_range [the second part of the eqn]
-                #qv = (1.0 - q_range) + (((-1 * q)/scale_factor) * q_range)
-                q_fraction = 1.0 / (-1.0 * q) # this is the fraction of the remaining spare q values that we can assign
-                qv = q_max + ((1.0 - q_max) * q_fraction) # this scales the fraction to the remaining q range and adds it onto the highest other qs (this also handles q_max = 1.0 implicitly)
+                # qv = (1.0 - q_range) + (((-1 * q)/scale_factor) * q_range)
+                q_fraction = 1.0 / (-1.0 * q)  # this is the fraction of the remaining spare q values that we can assign
+                qv = q_max + ((
+                              1.0 - q_max) * q_fraction)  # this scales the fraction to the remaining q range and adds it onto the highest other qs (this also handles q_max = 1.0 implicitly)
                 self.insert(sorted, qv, value)
 
         # now we have a dictionary keyed by q value which we can return
@@ -602,11 +616,11 @@ class ContentNegotiator(object):
 
     def _interpret_accept_language_field(self, accept, default_q):
         components = accept.split(";")
-        
+
         lang = None
         sublang = None
         q = default_q
-        
+
         # the first part can be a language, or a language-sublanguage pair (like en, or en-gb)
         langs = components[0].strip()
         lang_parts = langs.split("-")
@@ -615,42 +629,41 @@ class ContentNegotiator(object):
         elif len(lang_parts) == 2:
             lang = lang_parts[0]
             sublang = lang_parts[1]
-            
+
         if len(components) == 2:
-            q = components[1].strip()[2:] # strip the "q=" from the start of the q value
-            
+            q = components[1].strip()[2:]  # strip the "q=" from the start of the q value
+
         return (lang, sublang, float(q))
-        
 
     def _interpret_accept_field(self, accept, default_q):
-    
+
         # the components of the part can be "type;params;q" "type;params", "type;q" or just "type"
         components = accept.split(";")
-    
+
         # the first part is always the type (see above comment)
         type = components[0].strip()
-    
+
         # create some default values for the other parts.  If there is no params, we will use None, if there is
         # no q we will use a negative number multiplied by the position in the list of this part.  This allows us
         # to later see the order in which the parts with no q value were listed, which is important
         params = None
         q = default_q
-    
+
         # There are then 3 possibilities remaining to check for: "type;q", "type;params" and "type;params;q"
         # ("type" is already handled by the default cases set up above)
         if len(components) == 2:
             # "type;q" or "type;params"
             if components[1].strip().startswith("q="):
                 # "type;q"
-                q = components[1].strip()[2:] # strip the "q=" from the start of the q value
+                q = components[1].strip()[2:]  # strip the "q=" from the start of the q value
             else:
                 # "type;params"
                 params = components[1].strip()
         elif len(components) == 3:
             # "type;params;q"
             params = components[1].strip()
-            q = components[1].strip()[2:] # strip the "q=" from the start of the q value
-            
+            q = components[1].strip()[2:]  # strip the "q=" from the start of the q value
+
         return (type, params, float(q))
 
     def insert(self, d, q, v):
@@ -658,7 +671,7 @@ class ContentNegotiator(object):
         Utility method: if dict d contains key q, then append value v to the array which is identified by that key
         otherwise create a new key with the value of an array with a single value v
         """
-        if d.has_key(q):
+        if q in d:
             d[q].append(v)
         else:
             d[q] = [v]
@@ -692,8 +705,8 @@ class ContentNegotiator(object):
         be reached.
         """
         log.info("Client: " + str(client))
-        log.info("Server: " +  str(server))
-        
+        log.info("Server: " + str(server))
+
         # get the client requirement keys sorted with the highest q first (the server is a list which should be
         # in order of preference already)
         ckeys = client.keys()
@@ -718,7 +731,7 @@ class ContentNegotiator(object):
                 if match is not None:
                     # if there is a match, register it
                     allowable.append(match)
-            
+
             log.info("Allowable: " + str(q) + ":" + str(allowable))
 
             # we now know if there are 0, 1 or many allowable content types at this q value
@@ -742,6 +755,7 @@ class ContentNegotiator(object):
         # an agreement on what content type they want and can deliver.  There's nothing more we can do!
         return None
 
+
 if __name__ == "__main__":
     """
     Some basic tests to show the code in action
@@ -757,22 +771,25 @@ if __name__ == "__main__":
 
     print("+++ application/atom+xml vs application/rdf+xml without q values +++")
     accept = "application/atom+xml, application/rdf+xml"
-    server = [AcceptParameters(ContentType("application/rdf+xml")), AcceptParameters(ContentType("application/atom+xml"))]
+    server = [AcceptParameters(ContentType("application/rdf+xml")),
+              AcceptParameters(ContentType("application/atom+xml"))]
     cn = ContentNegotiator(acceptable=server)
     ap = cn.negotiate(accept=accept)
     print("+++ " + str(ap) + " +++")
 
     print("+++ application/atom+xml vs application/rdf+xml with q values +++")
     accept = "application/atom+xml;q=0.6, application/rdf+xml;q=0.9"
-    server = [AcceptParameters(ContentType("application/rdf+xml")), AcceptParameters(ContentType("application/atom+xml"))]
+    server = [AcceptParameters(ContentType("application/rdf+xml")),
+              AcceptParameters(ContentType("application/atom+xml"))]
     cn = ContentNegotiator(acceptable=server)
     ap = cn.negotiate(accept=accept)
     print("+++ " + str(ap) + " +++")
 
     print("+++ application/atom+xml vs application/rdf+xml vs text/html with mixed q values +++")
     accept = "application/atom+xml;q=0.6, application/rdf+xml;q=0.9, text/html"
-    server = [AcceptParameters(ContentType("application/rdf+xml")), AcceptParameters(ContentType("application/atom+xml")),
-                AcceptParameters(ContentType("text/html"))]
+    server = [AcceptParameters(ContentType("application/rdf+xml")),
+              AcceptParameters(ContentType("application/atom+xml")),
+              AcceptParameters(ContentType("text/html"))]
     cn = ContentNegotiator(acceptable=server)
     ap = cn.negotiate(accept=accept)
     print("+++ " + str(ap) + " +++")
@@ -785,15 +802,16 @@ if __name__ == "__main__":
     print("+++ " + str(ap) + " +++")
 
     print(
-    "+++ application/atom+xml vs application/rdf+xml vs text/html with mixed q values, most preferred unavailable +++")
+        "+++ application/atom+xml vs application/rdf+xml vs text/html with mixed q values, most preferred unavailable +++")
     accept = "application/atom+xml;q=0.6, application/rdf+xml;q=0.9, text/html"
-    server = [AcceptParameters(ContentType("application/rdf+xml")), AcceptParameters(ContentType("application/atom+xml"))]
+    server = [AcceptParameters(ContentType("application/rdf+xml")),
+              AcceptParameters(ContentType("application/atom+xml"))]
     cn = ContentNegotiator(acceptable=server)
     ap = cn.negotiate(accept=accept)
     print("+++ " + str(ap) + " +++")
 
     print(
-    "+++ application/atom+xml vs application/rdf+xml vs text/html with mixed q values, most preferred available +++")
+        "+++ application/atom+xml vs application/rdf+xml vs text/html with mixed q values, most preferred available +++")
     accept = "application/atom+xml;q=0.6, application/rdf+xml;q=0.9, text/html"
     server = [AcceptParameters(ContentType("application/rdf+xml")), AcceptParameters(ContentType("text/html"))]
     cn = ContentNegotiator(acceptable=server)
@@ -810,7 +828,7 @@ if __name__ == "__main__":
     print("+++ image/* supported by server +++")
     accept = "image/*"
     server = [AcceptParameters(ContentType("text/plain")), AcceptParameters(ContentType("image/png")),
-                AcceptParameters(ContentType("image/jpeg"))]
+              AcceptParameters(ContentType("image/jpeg"))]
     cn = ContentNegotiator(acceptable=server)
     ap = cn.negotiate(accept=accept)
     print("+++ " + str(ap) + " +++")
@@ -818,7 +836,7 @@ if __name__ == "__main__":
     print("+++ */* supported by server +++")
     accept = "*/*"
     server = [AcceptParameters(ContentType("text/plain")), AcceptParameters(ContentType("image/png")),
-                AcceptParameters(ContentType("image/jpeg"))]
+              AcceptParameters(ContentType("image/jpeg"))]
     cn = ContentNegotiator(acceptable=server)
     ap = cn.negotiate(accept=accept)
     print("+++ " + str(ap) + " +++")
@@ -850,7 +868,7 @@ if __name__ == "__main__":
     print("+++ en vs de vs fr with mixed q values +++")
     accept = "en;q=0.6, de;q=0.9, fr"
     server = [AcceptParameters(language=Language("en")), AcceptParameters(language=Language("de")),
-                AcceptParameters(language=Language("fr"))]
+              AcceptParameters(language=Language("fr"))]
     cn = ContentNegotiator(acceptable=server)
     ap = cn.negotiate(accept_language=accept)
     print("+++ " + str(ap) + " +++")
@@ -939,7 +957,8 @@ if __name__ == "__main__":
     print("+++ 2 content types and one language specified +++")
     accept = "text/html, text/plain"
     accept_lang = "en"
-    server = [AcceptParameters(ContentType("text/html"), Language("de")), AcceptParameters(ContentType("text/plain"), Language("en"))]
+    server = [AcceptParameters(ContentType("text/html"), Language("de")),
+              AcceptParameters(ContentType("text/plain"), Language("en"))]
     cn = ContentNegotiator(acceptable=server)
     ap = cn.negotiate(accept=accept, accept_language=accept_lang)
     print("+++ " + str(ap) + " +++")
@@ -947,16 +966,18 @@ if __name__ == "__main__":
     print("+++ 2 content types and 2 languages specified +++")
     accept = "text/html, text/plain"
     accept_lang = "en, de"
-    server = [AcceptParameters(ContentType("text/html"), Language("de")), AcceptParameters(ContentType("text/plain"), Language("en"))]
+    server = [AcceptParameters(ContentType("text/html"), Language("de")),
+              AcceptParameters(ContentType("text/plain"), Language("en"))]
     cn = ContentNegotiator(acceptable=server)
     ap = cn.negotiate(accept=accept, accept_language=accept_lang)
     print("+++ " + str(ap) + " +++")
 
     print("+++ 2 content types and one language specified, with weights +++")
-    weights = {'content_type' : 2.0, 'language' : 1.0, 'charset' : 1.0, 'encoding' : 1.0}
+    weights = {'content_type': 2.0, 'language': 1.0, 'charset': 1.0, 'encoding': 1.0}
     accept = "text/html, text/plain"
     accept_lang = "en"
-    server = [AcceptParameters(ContentType("text/html"), Language("de")), AcceptParameters(ContentType("text/plain"), Language("en"))]
+    server = [AcceptParameters(ContentType("text/html"), Language("de")),
+              AcceptParameters(ContentType("text/plain"), Language("en"))]
     cn = ContentNegotiator(acceptable=server, weights=weights)
     ap = cn.negotiate(accept=accept, accept_language=accept_lang)
     print("+++ " + str(ap) + " +++")

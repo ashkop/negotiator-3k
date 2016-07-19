@@ -709,8 +709,7 @@ class ContentNegotiator(object):
 
         # get the client requirement keys sorted with the highest q first (the server is a list which should be
         # in order of preference already)
-        ckeys = client.keys()
-        ckeys.sort(reverse=True)
+        ckeys = sorted(client.keys(), reverse=True)
 
         # the rule for determining what to return is that "the client's preference always wins", so we look for the
         # highest q ranked item that the server is capable of returning.  We only take into account the server's

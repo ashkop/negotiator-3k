@@ -6,8 +6,8 @@ setup(
     packages = find_packages(),
     install_requires = [],
     url = '',
-    author = 'Richard Jones',
-    author_email = 'richard@cottagelabs.com',
+    author = 'Alex Shkop',
+    author_email = 'a.v.shkop+pypi@gmail.com',
     description = """
     Proper Content Negotiation for Python
     
@@ -18,6 +18,8 @@ setup(
     
     This version of the Negotiator also supports the SWORDv2 extensions to HTTP Accept
     in the form of Accept-Packaging.
+
+    Forked from https://pypi.python.org/pypi/negotiator/1.0.0
     """,
     license = 'CC0',
     classifiers = [
